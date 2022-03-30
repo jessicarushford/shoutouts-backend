@@ -1,7 +1,8 @@
 import express from "express";
 import { ObjectId } from "mongodb";
 import { getClient } from "../db";
-import QueryStringParams from "../models/QueryStringParams";
+import OrQuery from "../models/OrQuery";
+import Query from "../models/Query";
 import Shoutout from "../models/Shoutout";
 
 const shoutoutRouter = express.Router();
@@ -13,17 +14,31 @@ const errorResponse = (error: any, res: any) => {
 
 shoutoutRouter.get("/", async (req, res) => {
   try {
-    const { to } = req.query;
-    const params: QueryStringParams = {
-      ...(to ? { to: to as string } : {}),
-    };
+    const { to, from } = req.query;
     const client = await getClient();
-    const results = await client
-      .db()
-      .collection<Shoutout>("shoutouts")
-      .find(params)
-      .toArray();
-    res.json(results);
+    if (to && from) {
+      const orQuery: OrQuery = {
+        $or: [{ to: to as string }, { from: from as string }],
+      };
+      const results = await client
+        .db()
+        .collection<Shoutout>("shoutouts")
+        .find(orQuery)
+        .toArray();
+      res.json(results);
+    } else {
+      const query: Query = {
+        ...(to ? { to: to as string } : {}),
+        ...(from ? { from: from as string } : {}),
+      };
+      const results = await client
+        .db()
+        .collection<Shoutout>("shoutouts")
+        .find(query)
+        .toArray();
+      res.status(200);
+      res.json(results);
+    }
   } catch (err) {
     errorResponse(err, res);
   }
