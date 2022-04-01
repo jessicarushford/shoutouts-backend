@@ -14,11 +14,11 @@ const errorResponse = (error: any, res: any) => {
 
 shoutoutRouter.get("/", async (req, res) => {
   try {
-    const { to, from } = req.query;
+    const { to, me } = req.query;
     const client = await getClient();
-    if (to && from) {
+    if (me) {
       const orQuery: OrQuery = {
-        $or: [{ to: to as string }, { from: from as string }],
+        $or: [{ to: me as string }, { from: me as string }],
       };
       const results = await client
         .db()
@@ -29,7 +29,6 @@ shoutoutRouter.get("/", async (req, res) => {
     } else {
       const query: Query = {
         ...(to ? { to: to as string } : {}),
-        ...(from ? { from: from as string } : {}),
       };
       const results = await client
         .db()
@@ -62,7 +61,7 @@ shoutoutRouter.post("/", async (req, res) => {
   try {
     const newShoutout: Shoutout = req.body;
     const client = await getClient();
-    client.db().collection<Shoutout>("shoutouts").insertOne(newShoutout);
+    await client.db().collection<Shoutout>("shoutouts").insertOne(newShoutout);
     res.status(200).json(newShoutout);
     // shorthand^ instead of two lines
   } catch (err) {
